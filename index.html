@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="通过摄像头实时识别肢体动作，并推荐相似表情包的纯前端网站。"
+    />
+    <title>表情包大赏 | 动作匹配</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
+    <link rel="stylesheet" href="styles.css" />
+    <script type="module" src="app.js"></script>
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="camera-stage" aria-label="摄像头实时动作识别">
+        <div class="stage-topbar">
+          <div>
+            <p class="eyebrow">LIVE POSE MEME MATCH</p>
+            <h1>表情包大赏</h1>
+          </div>
+          <button class="camera-button" id="cameraButton" type="button">
+            <span class="button-icon" aria-hidden="true">●</span>
+            开启摄像头
+          </button>
+        </div>
+
+        <div class="video-frame" id="videoFrame">
+          <video id="cameraVideo" playsinline muted></video>
+          <canvas id="poseCanvas" aria-hidden="true"></canvas>
+          <div class="empty-state" id="emptyState">
+            <p class="empty-kicker">等待授权</p>
+            <p>点击右上角按钮，站到画面中央，做一个动作。</p>
+          </div>
+          <div class="status-pill" id="statusPill">模型准备中</div>
+          <div class="action-readout">
+            <span>当前动作</span>
+            <strong id="actionLabel">未识别</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="meme-stage" aria-label="相似表情包推荐">
+        <div class="meme-copy">
+          <p class="eyebrow">MATCHED MEME</p>
+          <h2 id="memeTitle">正在准备表情包</h2>
+          <p id="memeMeta">本地素材库会根据动作标签实时排序。</p>
+        </div>
+
+        <div class="meme-board">
+          <article class="hero-meme" id="heroMeme">
+            <img id="heroMemeImage" alt="推荐表情包" />
+            <div class="hero-caption">
+              <span id="heroAction">未识别</span>
+              <strong id="heroTitle">等待动作</strong>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">保持围观</title>
+  <desc id="desc">一个普通站立围观的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#fff5d6"/>
+  <path d="M70 88h500v452H70z" fill="#11110f" stroke="#d8ff3f" stroke-width="14"/>
+  <circle cx="320" cy="248" r="95" fill="#ffcf42" stroke="#fff5d6" stroke-width="12"/>
+  <path d="M212 407c50-63 166-63 216 0l42 96H170z" fill="#ff4c24" stroke="#fff5d6" stroke-width="12"/>
+  <path d="M278 249h1m84 0h1" stroke="#11110f" stroke-width="18" stroke-linecap="round"/>
+  <path d="M282 315h77" stroke="#11110f" stroke-width="12" stroke-linecap="round"/>
+  <text x="320" y="586" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="52" fill="#11110f">先围观一下</text>
+</svg>

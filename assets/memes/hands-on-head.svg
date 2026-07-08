@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">抱头震惊</title>
+  <desc id="desc">一个双手抱头震惊的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#11110f"/>
+  <path d="M72 84h496v464H72z" fill="#ff4c24" stroke="#fff5d6" stroke-width="14"/>
+  <path d="M198 246c-32-46-53-67-91-79M442 246c32-46 53-67 91-79" stroke="#11110f" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="320" cy="276" r="110" fill="#fff5d6" stroke="#11110f" stroke-width="12"/>
+  <path d="M239 407c49-41 113-41 162 0l55 96H184z" fill="#d8ff3f" stroke="#11110f" stroke-width="12"/>
+  <circle cx="276" cy="263" r="17" fill="#11110f"/>
+  <circle cx="364" cy="263" r="17" fill="#11110f"/>
+  <ellipse cx="320" cy="330" rx="33" ry="42" fill="#11110f"/>
+  <text x="320" y="587" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="52" fill="#fff5d6">啊？？？</text>
+</svg>

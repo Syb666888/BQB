@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">双手投降式开心</title>
+  <desc id="desc">一个双手举起欢呼的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#48dbff"/>
+  <path d="M78 75h484v466H78z" fill="#fff5d6" stroke="#11110f" stroke-width="14"/>
+  <path d="M222 346 133 150M418 346l89-196" stroke="#11110f" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="320" cy="255" r="96" fill="#ffcf42" stroke="#11110f" stroke-width="12"/>
+  <path d="M213 420c46-58 168-58 214 0l32 85H181z" fill="#ff4c24" stroke="#11110f" stroke-width="12"/>
+  <path d="M276 242h1m88 0h1" stroke="#11110f" stroke-width="20" stroke-linecap="round"/>
+  <path d="M268 298c38 46 78 46 116 0" fill="none" stroke="#11110f" stroke-width="13" stroke-linecap="round"/>
+  <text x="320" y="588" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="54" fill="#11110f">赢麻了</text>
+</svg>

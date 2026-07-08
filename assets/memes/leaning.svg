@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">歪头观察</title>
+  <desc id="desc">一个歪头观察的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#d8ff3f"/>
+  <path d="M74 82h492v466H74z" fill="#11110f" stroke="#fff5d6" stroke-width="14"/>
+  <g transform="rotate(-12 320 315)">
+    <circle cx="320" cy="256" r="95" fill="#fff5d6" stroke="#11110f" stroke-width="12"/>
+    <path d="M224 414c52-72 141-72 193 0l39 92H186z" fill="#48dbff" stroke="#fff5d6" stroke-width="12"/>
+    <circle cx="282" cy="254" r="15" fill="#11110f"/>
+    <circle cx="362" cy="254" r="15" fill="#11110f"/>
+    <path d="M289 315c26 12 55 12 82 0" fill="none" stroke="#11110f" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <text x="320" y="586" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="52" fill="#11110f">让我看看</text>
+</svg>

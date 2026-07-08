@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">举手发言</title>
+  <desc id="desc">一个举手发言的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#fff5d6"/>
+  <path d="M66 92h508v456H66z" fill="#d8ff3f" stroke="#11110f" stroke-width="14"/>
+  <circle cx="328" cy="258" r="91" fill="#ffcf42" stroke="#11110f" stroke-width="12"/>
+  <path d="M254 405c37-62 125-62 162 0l42 91H212z" fill="#48dbff" stroke="#11110f" stroke-width="12"/>
+  <path d="M408 210 505 74" stroke="#11110f" stroke-width="28" stroke-linecap="round"/>
+  <path d="M505 74c30 2 51 21 53 49" stroke="#11110f" stroke-width="22" stroke-linecap="round"/>
+  <path d="M291 248h1m72 0h1" stroke="#11110f" stroke-width="20" stroke-linecap="round"/>
+  <path d="M288 308c31 25 67 25 102 0" fill="none" stroke="#11110f" stroke-width="12" stroke-linecap="round"/>
+  <text x="320" y="585" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="58" fill="#11110f">我来！我来！</text>
+</svg>

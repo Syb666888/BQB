@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">摊手问号</title>
+  <desc id="desc">一个摊手疑惑的表情包占位图。</desc>
+  <rect width="640" height="640" fill="#fff5d6"/>
+  <path d="M58 84h524v456H58z" fill="#48dbff" stroke="#11110f" stroke-width="14"/>
+  <path d="M227 369 96 325M413 369l131-44" stroke="#11110f" stroke-width="30" stroke-linecap="round"/>
+  <circle cx="320" cy="251" r="91" fill="#ffcf42" stroke="#11110f" stroke-width="12"/>
+  <path d="M221 405c38-55 160-55 198 0l35 96H186z" fill="#d8ff3f" stroke="#11110f" stroke-width="12"/>
+  <path d="M278 252h1m84 0h1" stroke="#11110f" stroke-width="18" stroke-linecap="round"/>
+  <path d="M281 319c27-16 52-16 78 0" fill="none" stroke="#11110f" stroke-width="12" stroke-linecap="round"/>
+  <text x="320" y="586" text-anchor="middle" font-family="Impact, 'Microsoft YaHei', sans-serif" font-size="52" fill="#11110f">这我咋知道</text>
+</svg>

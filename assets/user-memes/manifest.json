@@ -1,0 +1,72 @@
+[
+  {
+    "src": "assets/user-memes/9b673797-c161-458d-94e7-0d4284602d56.png",
+    "title": "猫猫指你",
+    "actions": ["single_hand_up"],
+    "keywords": ["指人", "举手", "点名"],
+    "weight": 4
+  },
+  {
+    "src": "assets/user-memes/c381e95b-a1ab-47b5-8828-605d8f54c56f.png",
+    "title": "猫猫一指",
+    "actions": ["single_hand_up"],
+    "keywords": ["单手", "提醒", "就是你"],
+    "weight": 3
+  },
+  {
+    "src": "assets/user-memes/f3b3669c-9eba-43c8-a8b8-be1e9b7080c7.png",
+    "title": "OK",
+    "actions": ["single_hand_up", "neutral"],
+    "keywords": ["OK", "赞", "认可"],
+    "weight": 2
+  },
+  {
+    "src": "assets/user-memes/8c0aed3b-9580-4313-a94f-287e9334858e.png",
+    "title": "academic!",
+    "actions": ["both_hands_up", "single_hand_up"],
+    "keywords": ["学术", "鼓掌", "双手"],
+    "weight": 3
+  },
+  {
+    "src": "assets/user-memes/66b07915-fd04-4c5d-b17d-8951e21e6545.png",
+    "title": "过来，我给你打两枪",
+    "actions": ["arms_open", "both_hands_up"],
+    "keywords": ["张开双臂", "气势", "开火"],
+    "weight": 3
+  },
+  {
+    "src": "assets/user-memes/affb328c-5729-437c-bb6c-beef4653aa27.png",
+    "title": "思索",
+    "actions": ["hands_on_head", "leaning"],
+    "keywords": ["思考", "托腮", "观察"],
+    "weight": 4
+  },
+  {
+    "src": "assets/user-memes/8b5478fe-d80d-4dff-a28a-71ac393e19f7.png",
+    "title": "猫猫托腮",
+    "actions": ["hands_on_head", "neutral"],
+    "keywords": ["托腮", "乖巧", "等待"],
+    "weight": 3
+  },
+  {
+    "src": "assets/user-memes/32867d3a-507f-4be1-ae30-cc71ebaf37d4.png",
+    "title": "干你",
+    "actions": ["arms_open", "leaning"],
+    "keywords": ["冲", "攻击", "靠近"],
+    "weight": 2
+  },
+  {
+    "src": "assets/user-memes/c01c1c95-dd24-4a92-9b5f-46b1cee1a055.png",
+    "title": "擦手手",
+    "actions": ["neutral", "unknown"],
+    "keywords": ["默认", "等待", "乖巧"],
+    "weight": 2
+  },
+  {
+    "src": "assets/user-memes/02c5cf35-037a-4f7d-921d-28d3dbb9a3a6.png",
+    "title": "小狗待机",
+    "actions": ["neutral", "unknown"],
+    "keywords": ["默认", "待机", "小狗"],
+    "weight": 1
+  }
+]

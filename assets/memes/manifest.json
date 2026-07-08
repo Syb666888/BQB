@@ -1,0 +1,44 @@
+[
+  {
+    "src": "assets/memes/single-hand-up.svg",
+    "title": "举手发言",
+    "actions": ["single_hand_up"],
+    "keywords": ["举手", "抢答", "我来"],
+    "weight": 3
+  },
+  {
+    "src": "assets/memes/both-hands-up.svg",
+    "title": "双手投降式开心",
+    "actions": ["both_hands_up"],
+    "keywords": ["欢呼", "投降", "太强了"],
+    "weight": 3
+  },
+  {
+    "src": "assets/memes/hands-on-head.svg",
+    "title": "抱头震惊",
+    "actions": ["hands_on_head"],
+    "keywords": ["震惊", "不敢相信", "崩溃"],
+    "weight": 3
+  },
+  {
+    "src": "assets/memes/arms-open.svg",
+    "title": "摊手问号",
+    "actions": ["arms_open"],
+    "keywords": ["摊手", "不知道", "疑惑"],
+    "weight": 3
+  },
+  {
+    "src": "assets/memes/leaning.svg",
+    "title": "歪头观察",
+    "actions": ["leaning"],
+    "keywords": ["观察", "歪头", "怀疑"],
+    "weight": 2
+  },
+  {
+    "src": "assets/memes/neutral.svg",
+    "title": "保持围观",
+    "actions": ["neutral", "unknown"],
+    "keywords": ["围观", "待机", "默认"],
+    "weight": 1
+  }
+]
