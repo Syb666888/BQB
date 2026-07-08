@@ -17,10 +17,37 @@ const ACTIONS = {
   unknown: "未识别",
 };
 
+const POSE_CONNECTIONS = [
+  [0, 1],
+  [0, 4],
+  [1, 2],
+  [2, 3],
+  [4, 5],
+  [5, 6],
+  [9, 10],
+  [11, 12],
+  [11, 13],
+  [13, 15],
+  [12, 14],
+  [14, 16],
+  [11, 23],
+  [12, 24],
+  [23, 24],
+  [23, 25],
+  [25, 27],
+  [27, 29],
+  [27, 31],
+  [24, 26],
+  [26, 28],
+  [28, 30],
+  [28, 32],
+];
+
 let video = document.querySelector("#cameraVideo");
 const canvas = document.querySelector("#poseCanvas");
 const ctx = canvas.getContext("2d");
 const analysisCanvas = document.createElement("canvas");
+// 姿态模型直接吃离屏 canvas，避免在可见画面上做额外绘制和读像素。
 const analysisCtx = analysisCanvas.getContext("2d", { willReadFrequently: true });
 const videoFrame = document.querySelector("#videoFrame");
 const cameraButton = document.querySelector("#cameraButton");
@@ -31,6 +58,7 @@ const heroTitle = document.querySelector("#heroTitle");
 const heroAction = document.querySelector("#heroAction");
 const memeTitle = document.querySelector("#memeTitle");
 const memeMeta = document.querySelector("#memeMeta");
+const emptyState = document.querySelector("#emptyState");
 
 let poseLandmarker;
 let memes = [];
@@ -48,13 +76,16 @@ let frozenPreviewChecks = 0;
 let restartCount = 0;
 const DETECTION_INTERVAL_MS = 1000;
 const DEBUG_CAMERA = new URLSearchParams(window.location.search).has("debug");
+const IS_EDGE_MOBILE = /EdgA|EdgiOS/i.test(navigator.userAgent);
 
 init();
 
 async function init() {
+  // 先把素材和占位状态准备好，再异步加载体积更大的姿态模型。
   setStatus("加载表情包素材");
   await loadMemes();
   renderRecommendation("unknown", true);
+  updateCameraHint();
 
   setStatus("加载动作识别模型");
   try {
@@ -89,6 +120,11 @@ cameraButton.addEventListener("click", async () => {
   setStatus("检查摄像头权限");
 
   try {
+    // 移动端浏览器常见失败点是非 HTTPS 上下文，这里优先给出更准确的提示。
+    if (requiresSecureCameraContext()) {
+      throw new Error("CameraSecureContextRequired");
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("MediaDevicesUnavailable");
     }
@@ -152,6 +188,7 @@ async function getCameraPermissionState() {
 }
 
 async function requestCameraStream() {
+  // 先尝试更适合动作识别的前置摄像头和较稳的分辨率，再回退到浏览器默认配置。
   const preferredConstraints = {
     video: {
       width: { ideal: 640 },
@@ -179,6 +216,11 @@ async function attachCameraStream(nextStream) {
   video.muted = true;
   video.playsInline = true;
   video.autoplay = true;
+  video.setAttribute("muted", "");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("autoplay", "");
+  // 某些移动浏览器只认 attribute，不认 JS property。
+  video.setAttribute("webkit-playsinline", "true");
   await waitForVideoMetadata();
   await video.play();
   lastVideoTime = -1;
@@ -193,6 +235,10 @@ function recreateVideoElement() {
   nextVideo.muted = true;
   nextVideo.playsInline = true;
   nextVideo.autoplay = true;
+  nextVideo.setAttribute("muted", "");
+  nextVideo.setAttribute("playsinline", "");
+  nextVideo.setAttribute("autoplay", "");
+  nextVideo.setAttribute("webkit-playsinline", "true");
   video.replaceWith(nextVideo);
   video = nextVideo;
 }
@@ -210,6 +256,7 @@ function startRealtimeLoops() {
   stopRealtimeLoops();
   resizeCanvas();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 分开跑识别与保活：识别按固定节奏降频，保活更频繁检查视频是否卡住。
   detectionTimerId = window.setInterval(runPoseDetectionTick, DETECTION_INTERVAL_MS);
   watchdogTimerId = window.setInterval(keepVideoPlaying, 1000);
   runPoseDetectionTick();
@@ -227,6 +274,7 @@ async function keepVideoPlaying() {
     return;
   }
 
+  // 某些手机浏览器会悄悄挂起 track 或冻结 video.currentTime，这里统一兜底重连。
   const track = stream.getVideoTracks()[0];
   if (!track || track.readyState === "ended" || track.muted) {
     await restartCameraStream("摄像头画面中断，正在重新连接");
@@ -298,6 +346,7 @@ function runPoseDetectionTick() {
   const shouldDetect = hasFrame && video.currentTime !== lastVideoTime && !detectionInFlight;
 
   if (shouldDetect) {
+    // 只有拿到新帧才送进模型，避免重复吃同一帧浪费 CPU。
     detectionInFlight = true;
     const now = performance.now();
     lastVideoTime = video.currentTime;
@@ -308,11 +357,13 @@ function runPoseDetectionTick() {
       analysisCtx.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
       const result = poseLandmarker.detectForVideo(analysisCanvas, now);
       const landmarks = result.landmarks?.[0];
+      drawPoseOverlay(landmarks);
       const action = classifyPose(landmarks);
       updateStableAction(action);
       setStatus(`实时画面中 · ${getTrackSummary()}`);
     } catch (error) {
       console.warn("Pose detection skipped this tick", error);
+      clearPoseOverlay();
       setStatus(`实时画面中 · ${getTrackSummary()} · 识别降频`);
     } finally {
       detectionInFlight = false;
@@ -350,6 +401,7 @@ function classifyPose(landmarks) {
     return "unknown";
   }
 
+  // 这里不做复杂 ML 二分类，只用肩宽和躯干高度做归一化阈值，降低不同身材下的误差。
   const shoulderWidth = Math.max(distance(leftShoulder, rightShoulder), 0.08);
   const torsoHeight = Math.max(
     Math.abs(mid(leftShoulder, rightShoulder).y - mid(leftHip, rightHip).y),
@@ -404,6 +456,7 @@ function updateStableAction(action) {
 
   const now = performance.now();
   if (now - lastRecommendationAt >= DETECTION_INTERVAL_MS - 50) {
+    // 推荐刷新与识别节奏对齐，避免 UI 在同一动作上频繁闪动。
     lastRecommendationAt = now;
     renderRecommendation(stableAction);
   }
@@ -425,6 +478,7 @@ function renderRecommendation(action, force = false) {
   const fallback = memes
     .filter((meme) => meme.actions?.includes("neutral") || meme.actions?.includes("unknown"))
     .sort((a, b) => (b.weight || 1) - (a.weight || 1));
+  // 优先用动作精确匹配，没有命中时再回退到中性/兜底素材，避免页面空白。
   const pool = matching.length ? matching : fallback.length ? fallback : memes;
   const nextMeme = pool[0];
 
@@ -465,7 +519,7 @@ function stopCamera() {
   detectionInFlight = false;
   video.srcObject = null;
   videoFrame.classList.remove("is-streaming");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  clearPoseOverlay();
   cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">●</span>开启摄像头';
   setStatus("摄像头已关闭");
   stableAction = "unknown";
@@ -473,8 +527,68 @@ function stopCamera() {
   renderRecommendation("unknown", true);
 }
 
+function clearPoseOverlay() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function drawPoseOverlay(landmarks) {
+  clearPoseOverlay();
+
+  if (!landmarks?.length) {
+    return;
+  }
+
+  ctx.save();
+  ctx.lineJoin = "round";
+  ctx.lineCap = "round";
+  ctx.strokeStyle = "rgba(72, 219, 255, 0.9)";
+  ctx.fillStyle = "rgba(216, 255, 63, 0.95)";
+  ctx.shadowColor = "rgba(17, 17, 15, 0.45)";
+  ctx.shadowBlur = 8;
+
+  for (const [startIndex, endIndex] of POSE_CONNECTIONS) {
+    const startPoint = landmarks[startIndex];
+    const endPoint = landmarks[endIndex];
+
+    if (!isVisible(startPoint) || !isVisible(endPoint)) {
+      continue;
+    }
+
+    const start = toCanvasPoint(startPoint);
+    const end = toCanvasPoint(endPoint);
+    const confidence = Math.min(startPoint.visibility ?? 1, endPoint.visibility ?? 1);
+
+    ctx.beginPath();
+    ctx.lineWidth = 2 + confidence * 3;
+    ctx.moveTo(start.x, start.y);
+    ctx.lineTo(end.x, end.y);
+    ctx.stroke();
+  }
+
+  for (const landmark of landmarks) {
+    if (!isVisible(landmark)) {
+      continue;
+    }
+
+    const pointValue = toCanvasPoint(landmark);
+    const radius = 3 + (landmark.visibility ?? 1) * 3;
+    ctx.beginPath();
+    ctx.arc(pointValue.x, pointValue.y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.restore();
+}
+
 function point(landmarks, index) {
   return landmarks[index];
+}
+
+function toCanvasPoint(pointValue) {
+  return {
+    x: pointValue.x * canvas.width,
+    y: pointValue.y * canvas.height,
+  };
 }
 
 function isVisible(pointValue) {
@@ -496,9 +610,53 @@ function setStatus(message) {
   statusPill.textContent = message;
 }
 
+function requiresSecureCameraContext() {
+  return !window.isSecureContext && window.location.protocol === "http:";
+}
+
+function updateCameraHint() {
+  if (!emptyState) {
+    return;
+  }
+
+  const kicker = emptyState.querySelector(".empty-kicker");
+  const description = emptyState.querySelector("p:last-child");
+
+  // 初始文案要和当前运行环境一致，否则移动端会一直误导用户去点权限按钮。
+  if (requiresSecureCameraContext()) {
+    if (kicker) {
+      kicker.textContent = "需要安全连接";
+    }
+
+    if (description) {
+      description.textContent = IS_EDGE_MOBILE
+        ? "手机 Edge 只有在 HTTPS 或 localhost 下才能打开摄像头，当前局域网 HTTP 地址会被浏览器直接拦截。"
+        : "移动端浏览器通常只有在 HTTPS 或 localhost 下才能打开摄像头。";
+    }
+
+    return;
+  }
+
+  if (kicker) {
+    kicker.textContent = "等待授权";
+  }
+
+  if (description) {
+    description.textContent = "点击右上角按钮，站到画面中央，做一个动作。";
+  }
+}
+
 function getCameraErrorMessage(error) {
+  if (error?.message === "CameraSecureContextRequired") {
+    return IS_EDGE_MOBILE
+      ? "手机 Edge 只允许在 HTTPS 或 localhost 下使用摄像头；当前局域网 HTTP 地址无法调用摄像头"
+      : "当前页面不是安全上下文，浏览器已阻止摄像头；请改用 HTTPS 或 localhost";
+  }
+
   if (error?.message === "MediaDevicesUnavailable") {
-    return "当前浏览器不支持摄像头，请用 Chrome/Edge 打开本页";
+    return requiresSecureCameraContext()
+      ? "当前地址不是 HTTPS 或 localhost，浏览器不会暴露摄像头接口"
+      : "当前浏览器不支持摄像头，请用 Chrome/Edge 打开本页";
   }
 
   if (error?.message === "CameraPermissionDeniedBeforePrompt") {
