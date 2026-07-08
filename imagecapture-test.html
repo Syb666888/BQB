@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ImageCapture 摄像头测试</title>
+    <style>
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        color: #f6f0df;
+        background: #111;
+        font-family: "Microsoft YaHei", sans-serif;
+      }
+
+      main {
+        width: min(92vw, 960px);
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: #000;
+      }
+
+      button {
+        float: right;
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 6px;
+        color: #111;
+        background: #d8ff3f;
+        font-weight: 900;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <button id="startButton" type="button">开启摄像头</button>
+      <h1>ImageCapture 摄像头测试</h1>
+      <canvas id="canvas" width="640" height="480"></canvas>
+    </main>
+
+    <script>
+      const button = document.querySelector("#startButton");
+      const canvas = document.querySelector("#canvas");
+      const ctx = canvas.getContext("2d");
+
+      let capture;
+      let frameCount = 0;
+      let errorCount = 0;
+      let running = false;
+
+      button.addEventListener("click", async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+        const [track] = stream.getVideoTracks();
+        capture = new ImageCapture(track);
+        running = true;
+        button.textContent = "已开启";
+        button.disabled = true;
+        drawLoop();
+      });
+
+      async function drawLoop() {
+        if (!running) {
+          return;
+        }
+
+        try {
+          const bitmap = await capture.grabFrame();
+          canvas.width = bitmap.width;
+          canvas.height = bitmap.height;
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(bitmap, 0, 0);
+          ctx.restore();
+          bitmap.close?.();
+          frameCount += 1;
+        } catch (error) {
+          errorCount += 1;
+        }
+
+        document.title = `ImageCapture f=${frameCount} e=${errorCount}`;
+        window.setTimeout(drawLoop, 100);
+      }
+    </script>
+  </body>
+</html>

@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     <link rel="preconnect" href="https://storage.googleapis.com" crossorigin />
     <link rel="stylesheet" href="styles.css" />
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=live-debug-20260708"></script>
   </head>
   <body>
     <main class="app-shell">
@@ -29,7 +29,7 @@
 
         <div class="video-frame" id="videoFrame">
           <video id="cameraVideo" playsinline muted></video>
-          <canvas id="poseCanvas" aria-hidden="true"></canvas>
+          <canvas id="poseCanvas" aria-hidden="true" hidden></canvas>
           <div class="empty-state" id="emptyState">
             <p class="empty-kicker">等待授权</p>
             <p>点击右上角按钮，站到画面中央，做一个动作。</p>

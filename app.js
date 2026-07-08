@@ -17,24 +17,11 @@ const ACTIONS = {
   unknown: "未识别",
 };
 
-const CONNECTORS = [
-  [11, 12],
-  [11, 13],
-  [13, 15],
-  [12, 14],
-  [14, 16],
-  [11, 23],
-  [12, 24],
-  [23, 24],
-  [23, 25],
-  [25, 27],
-  [24, 26],
-  [26, 28],
-];
-
-const video = document.querySelector("#cameraVideo");
+let video = document.querySelector("#cameraVideo");
 const canvas = document.querySelector("#poseCanvas");
 const ctx = canvas.getContext("2d");
+const analysisCanvas = document.createElement("canvas");
+const analysisCtx = analysisCanvas.getContext("2d", { willReadFrequently: true });
 const videoFrame = document.querySelector("#videoFrame");
 const cameraButton = document.querySelector("#cameraButton");
 const statusPill = document.querySelector("#statusPill");
@@ -53,10 +40,14 @@ let watchdogTimerId;
 let lastVideoTime = -1;
 let stableAction = "unknown";
 let selectedMeme;
-let actionHistory = [];
 let lastRecommendationAt = 0;
 let detectionInFlight = false;
-const DETECTION_INTERVAL_MS = 300;
+let restartingStream = false;
+let lastPreviewTime = -1;
+let frozenPreviewChecks = 0;
+let restartCount = 0;
+const DETECTION_INTERVAL_MS = 1000;
+const DEBUG_CAMERA = new URLSearchParams(window.location.search).has("debug");
 
 init();
 
@@ -104,14 +95,7 @@ cameraButton.addEventListener("click", async () => {
 
     const permission = await getCameraPermissionState();
     setStatus(permission === "denied" ? "浏览器报告权限被禁用，正在直接尝试打开" : "请求摄像头权限");
-    stream = await requestCameraStream();
-
-    video.srcObject = stream;
-    video.muted = true;
-    video.playsInline = true;
-    video.autoplay = true;
-    await waitForVideoMetadata();
-    await video.play();
+    await attachCameraStream(await requestCameraStream());
     resizeCanvas();
     videoFrame.classList.add("is-streaming");
     cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">■</span>关闭摄像头';
@@ -145,12 +129,12 @@ async function loadMemes() {
 }
 
 function waitForVideoMetadata() {
-  if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
     return Promise.resolve();
   }
 
   return new Promise((resolve) => {
-    video.addEventListener("loadedmetadata", resolve, { once: true });
+    video.addEventListener("loadeddata", resolve, { once: true });
   });
 }
 
@@ -189,6 +173,30 @@ async function requestCameraStream() {
   }
 }
 
+async function attachCameraStream(nextStream) {
+  stream = nextStream;
+  video.srcObject = stream;
+  video.muted = true;
+  video.playsInline = true;
+  video.autoplay = true;
+  await waitForVideoMetadata();
+  await video.play();
+  lastVideoTime = -1;
+  lastPreviewTime = -1;
+  frozenPreviewChecks = 0;
+  updateDebugTitle();
+}
+
+function recreateVideoElement() {
+  const nextVideo = document.createElement("video");
+  nextVideo.id = "cameraVideo";
+  nextVideo.muted = true;
+  nextVideo.playsInline = true;
+  nextVideo.autoplay = true;
+  video.replaceWith(nextVideo);
+  video = nextVideo;
+}
+
 function getTrackSummary() {
   const [track] = stream?.getVideoTracks?.() || [];
   const settings = track?.getSettings?.() || {};
@@ -200,6 +208,8 @@ function getTrackSummary() {
 
 function startRealtimeLoops() {
   stopRealtimeLoops();
+  resizeCanvas();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
   detectionTimerId = window.setInterval(runPoseDetectionTick, DETECTION_INTERVAL_MS);
   watchdogTimerId = window.setInterval(keepVideoPlaying, 1000);
   runPoseDetectionTick();
@@ -217,6 +227,12 @@ async function keepVideoPlaying() {
     return;
   }
 
+  const track = stream.getVideoTracks()[0];
+  if (!track || track.readyState === "ended" || track.muted) {
+    await restartCameraStream("摄像头画面中断，正在重新连接");
+    return;
+  }
+
   if (video.paused || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
     try {
       await video.play();
@@ -224,6 +240,50 @@ async function keepVideoPlaying() {
       console.warn("Video playback watchdog could not resume playback", error);
     }
   }
+
+  if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && video.currentTime === lastPreviewTime) {
+    frozenPreviewChecks += 1;
+  } else {
+    frozenPreviewChecks = 0;
+    lastPreviewTime = video.currentTime;
+  }
+
+  if (frozenPreviewChecks >= 2) {
+    await restartCameraStream("摄像头画面停住，正在重新连接");
+  }
+
+  updateDebugTitle();
+}
+
+async function restartCameraStream(message) {
+  if (restartingStream || !stream) {
+    return;
+  }
+
+  restartingStream = true;
+  setStatus(message);
+
+  try {
+    restartCount += 1;
+    stream.getTracks().forEach((track) => track.stop());
+    video.srcObject = null;
+    recreateVideoElement();
+    await attachCameraStream(await requestCameraStream());
+    setStatus(`实时画面中 · ${getTrackSummary()}`);
+  } catch (error) {
+    console.error(error);
+    setStatus(getCameraErrorMessage(error));
+  } finally {
+    restartingStream = false;
+  }
+}
+
+function updateDebugTitle() {
+  if (!DEBUG_CAMERA) {
+    return;
+  }
+
+  document.title = `t=${video.currentTime.toFixed(1)} stall=${frozenPreviewChecks} restart=${restartCount}`;
 }
 
 function runPoseDetectionTick() {
@@ -231,7 +291,11 @@ function runPoseDetectionTick() {
     return;
   }
 
-  const shouldDetect = video.currentTime !== lastVideoTime && !detectionInFlight;
+  const hasFrame =
+    video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+    video.videoWidth > 0 &&
+    video.videoHeight > 0;
+  const shouldDetect = hasFrame && video.currentTime !== lastVideoTime && !detectionInFlight;
 
   if (shouldDetect) {
     detectionInFlight = true;
@@ -239,9 +303,11 @@ function runPoseDetectionTick() {
     lastVideoTime = video.currentTime;
 
     try {
-      const result = poseLandmarker.detectForVideo(video, now);
+      analysisCanvas.width = video.videoWidth;
+      analysisCanvas.height = video.videoHeight;
+      analysisCtx.drawImage(video, 0, 0, analysisCanvas.width, analysisCanvas.height);
+      const result = poseLandmarker.detectForVideo(analysisCanvas, now);
       const landmarks = result.landmarks?.[0];
-      drawPose(landmarks);
       const action = classifyPose(landmarks);
       updateStableAction(action);
       setStatus(`实时画面中 · ${getTrackSummary()}`);
@@ -329,13 +395,7 @@ function classifyPose(landmarks) {
 }
 
 function updateStableAction(action) {
-  actionHistory.push(action);
-  actionHistory = actionHistory.slice(-7);
-  const counts = actionHistory.reduce((result, item) => {
-    result[item] = (result[item] || 0) + 1;
-    return result;
-  }, {});
-  const nextAction = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || "unknown";
+  const nextAction = action || "unknown";
 
   if (nextAction !== stableAction) {
     stableAction = nextAction;
@@ -343,7 +403,7 @@ function updateStableAction(action) {
   }
 
   const now = performance.now();
-  if (now - lastRecommendationAt > 420) {
+  if (now - lastRecommendationAt >= DETECTION_INTERVAL_MS - 50) {
     lastRecommendationAt = now;
     renderRecommendation(stableAction);
   }
@@ -387,50 +447,6 @@ function buildMemeMeta(meme, action) {
   return tags ? `${actionText} · ${tags}` : `${actionText} · 本地素材匹配`;
 }
 
-function drawPose(landmarks) {
-  resizeCanvas();
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  if (!landmarks) {
-    return;
-  }
-
-  ctx.save();
-  ctx.scale(-1, 1);
-  ctx.translate(-canvas.width, 0);
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-
-  for (const [start, end] of CONNECTORS) {
-    const a = point(landmarks, start);
-    const b = point(landmarks, end);
-    if (!isVisible(a) || !isVisible(b)) {
-      continue;
-    }
-    ctx.strokeStyle = "rgba(216, 255, 63, 0.92)";
-    ctx.lineWidth = Math.max(4, canvas.width * 0.006);
-    ctx.beginPath();
-    ctx.moveTo(a.x * canvas.width, a.y * canvas.height);
-    ctx.lineTo(b.x * canvas.width, b.y * canvas.height);
-    ctx.stroke();
-  }
-
-  for (const landmark of landmarks) {
-    if (!isVisible(landmark)) {
-      continue;
-    }
-    ctx.fillStyle = "#ff4c24";
-    ctx.strokeStyle = "#fff5d6";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(landmark.x * canvas.width, landmark.y * canvas.height, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-  }
-
-  ctx.restore();
-}
-
 function resizeCanvas() {
   const rect = videoFrame.getBoundingClientRect();
   const width = Math.max(1, Math.floor(rect.width));
@@ -453,7 +469,6 @@ function stopCamera() {
   cameraButton.innerHTML = '<span class="button-icon" aria-hidden="true">●</span>开启摄像头';
   setStatus("摄像头已关闭");
   stableAction = "unknown";
-  actionHistory = [];
   actionLabel.textContent = ACTIONS.unknown;
   renderRecommendation("unknown", true);
 }

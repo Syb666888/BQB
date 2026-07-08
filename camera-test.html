@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>摄像头实时预览测试</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #111;
+        color: #f6f0df;
+        font-family: "Microsoft YaHei", sans-serif;
+      }
+
+      .wrap {
+        width: min(92vw, 960px);
+      }
+
+      video {
+        display: block;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        object-fit: cover;
+        background: #000;
+        transform: scaleX(-1);
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+
+      button {
+        padding: 10px 18px;
+        border: 0;
+        border-radius: 6px;
+        color: #111;
+        background: #d8ff3f;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      pre {
+        min-height: 5lh;
+        padding: 12px;
+        overflow: auto;
+        background: rgba(255, 255, 255, 0.08);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <div class="bar">
+        <h1>摄像头实时预览测试</h1>
+        <button id="startButton" type="button">开启摄像头</button>
+      </div>
+      <video id="video" autoplay playsinline muted></video>
+      <pre id="debug">等待开启</pre>
+    </main>
+
+    <script>
+      const video = document.querySelector("#video");
+      const debug = document.querySelector("#debug");
+      const startButton = document.querySelector("#startButton");
+
+      let stream;
+      let frameCount = 0;
+      let lastVideoTime = 0;
+      let stalledSeconds = 0;
+
+      startButton.addEventListener("click", async () => {
+        const params = new URLSearchParams(location.search);
+        const mode = params.get("mode") || "ideal";
+        const constraintsByMode = {
+          basic: { video: true, audio: false },
+          low: {
+            video: {
+              width: { ideal: 320 },
+              height: { ideal: 240 },
+              frameRate: { ideal: 10, max: 15 },
+              facingMode: "user",
+            },
+            audio: false,
+          },
+          ideal: {
+            video: {
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              frameRate: { ideal: 30 },
+              facingMode: "user",
+            },
+            audio: false,
+          },
+        };
+
+        stream = await navigator.mediaDevices.getUserMedia(constraintsByMode[mode] || constraintsByMode.ideal);
+        video.srcObject = stream;
+        await video.play();
+        startButton.textContent = "已开启";
+        startButton.disabled = true;
+        watchFrames();
+      });
+
+      function watchFrames() {
+        if ("requestVideoFrameCallback" in HTMLVideoElement.prototype) {
+          video.requestVideoFrameCallback(() => {
+            frameCount += 1;
+            watchFrames();
+          });
+        }
+      }
+
+      window.setInterval(() => {
+        if (video.currentTime === lastVideoTime) {
+          stalledSeconds += 1;
+        } else {
+          stalledSeconds = 0;
+          lastVideoTime = video.currentTime;
+        }
+
+        const track = stream?.getVideoTracks?.()[0];
+        document.title = `摄像头测试 t=${video.currentTime.toFixed(1)} f=${frameCount} s=${stalledSeconds}`;
+        debug.textContent = JSON.stringify(
+          {
+            currentTime: Number(video.currentTime.toFixed(3)),
+            readyState: video.readyState,
+            paused: video.paused,
+            frameCount,
+            stalledSeconds,
+            trackReadyState: track?.readyState,
+            trackMuted: track?.muted,
+            settings: track?.getSettings?.(),
+          },
+          null,
+          2,
+        );
+      }, 1000);
+    </script>
+  </body>
+</html>

@@ -183,8 +183,8 @@ video {
   opacity: 1;
 }
 
-canvas {
-  z-index: 2;
+#poseCanvas {
+  display: none;
 }
 
 .empty-state {
